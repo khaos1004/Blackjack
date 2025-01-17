@@ -3,27 +3,65 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});;
 const Game = require('./game');
 const { MIMEType } = require('util');
+const path = require('path');
+const fs = require('fs');
+
 
 app.use('/assets',express.static(__dirname + '/assets'));
 
 let game = new Map();
 
-app.get('/dev', (req, res) => {
-  res.sendFile(__dirname + '/dev.html');
-});
+app.get('/', (req, res) => {  
+  const { name, nyang } = req.query; // 쿼리 파라미터 추출  
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  console.log(`Player Name: ${name}, Bet: ${nyang}`);
+
+  // index.html 파일 경로
+  const filePath = path.join(__dirname, 'index.html');
+
+  // HTML 파일 읽기
+  fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) {
+      console.error("Error reading HTML file:", err);
+      res.status(500).send("Error loading page");
+      return;
+    }
+
+    // HTML 파일에 데이터를 삽입
+    const updatedHtml = html.replace(
+      '<script id="server-data"></script>',
+      `<script id="server-data">        
+        const playerName = "${name}";
+        const nyang = ${nyang} + "냥";        
+      </script>`
+    );
+
+    // 수정된 HTML 전송
+    res.send(updatedHtml);
+  });
 });
 
 io.on('connection', (socket) => {
-  console.log('a user connected ' + socket.id);
+  const referer = socket.handshake.headers.referer;
+  const urlParams = new URLSearchParams(new URL(referer).search);
+  const name = urlParams.get('name');
 
+  // 사용자 이름을 socket 객체에 저장
+  socket.playerName = name;
+
+  console.log('a user connected ' + name);
+  
   socket.emit('welcome', {
-    id : socket.id
+    // id : socket.id
+    id : name
   });
 
   socket.on('room_join', ({id})=> {
@@ -41,8 +79,8 @@ io.on('connection', (socket) => {
     }
     
     socket.join(id);
-    let users = io.sockets.adapter.rooms.get(id);    
-    console.log(users);
+    let users = io.sockets.adapter.rooms.get(id); 
+    console.log("***users: " + Array.from(users))   ;
     if(users == null) {
         users = [];
     }
@@ -141,10 +179,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', ()=>{
         console.log("a user disconnected, " + socket.id);
   });
-
 });
-
-
 
 server.listen(3001, () => {
   console.log('tomato BLACKJACK◇♠♡♣ server listening on *:3001');
