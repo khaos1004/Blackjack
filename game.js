@@ -2,15 +2,24 @@
 const Common = require('./common');
 
 module.exports = class Game {
-    
+
     init() {
+
+        // const PURCHASE_LIMIT = 700_000_000_000; // 700억냥
+        // const ENTRY_AMOUNT = 1000000000; // 10억냥
+        // const MAX_BET_LIMIT = PURCHASE_LIMIT / 200; // 3억 5000만냥
+        // const MAX_WIN_LIMIT = PURCHASE_LIMIT / 10; // 70억냥
+        // const MIN_BET_AMOUNT = 100000; // 10만냥
+        // const MAX_BET_AMOUNT = 1000000; // 100만냥
+
+
         this.cards = [];
         this.dcards = [];
         this.userCard = {};
         this.userCard2 = {};
         this.bet = [];
         this.turn = 0;
-        
+
         this.isSplit = false;
         this.isEnd = false;
         this.isSplitEnd = false;
@@ -26,30 +35,30 @@ module.exports = class Game {
         io.sockets.in(roomId).emit('betting', {});
     }
 
-    
+
     shuffle() {
-        for(var i=1;i<=13;i++) {
+        for (var i = 1; i <= 13; i++) {
             let s = "S"
             let c = {};
             c.shape = s;
             c.number = i;
             this.cards.push(c);
         }
-        for(var i=1;i<=13;i++) {
+        for (var i = 1; i <= 13; i++) {
             let s = "D"
             let c = {};
             c.shape = s;
             c.number = i;
             this.cards.push(c);
         }
-        for(var i=1;i<=13;i++) {
+        for (var i = 1; i <= 13; i++) {
             let s = "H"
             let c = {};
             c.shape = s;
             c.number = i;
             this.cards.push(c);
         }
-        for(var i=1;i<=13;i++) {
+        for (var i = 1; i <= 13; i++) {
             let s = "C"
             let c = {};
             c.shape = s;
@@ -62,7 +71,7 @@ module.exports = class Game {
 
     betting(io, userList, roomId) {
         this.bet.push(true);
-        if(this.bet.length == userList.length) {
+        if (this.bet.length == userList.length) {
             console.log('all user bet done.');
             this.give(io, userList, roomId);
         }
@@ -71,56 +80,56 @@ module.exports = class Game {
     give(io, userList, roomId) {
         console.log('give!!');
 
-        for(var u of userList) {
+        for (var u of userList) {
             this.userCard[u] = [];
         }
 
-        for(var i=1;i<=2;i++) {
+        for (var i = 1; i <= 2; i++) {
             let card = this.cards.pop();
             this.dcards.push(card);
-            
-            for(var u of userList) {
+
+            for (var u of userList) {
                 let card2 = this.cards.pop();
                 this.userCard[u].push(card2);
             }
         }
 
-        for(var u of userList) {
+        for (var u of userList) {
             io.to(u).emit('give', {
-                dc:this.dcards, 
-                uc:this.userCard
+                dc: this.dcards,
+                uc: this.userCard
             });
         }
 
         this.endturn(io, userList, roomId);
-        
+
     }
 
     endturn(io, userList, roomId) {
         console.log('endturn, turn = ' + this.turn);
-        if(this.turn == userList.length) {
+        if (this.turn == userList.length) {
             //dealer play 
             let r = this.C.getSum(this.dcards);
-            while(r[1] < 17 || (r[1] > 21 && r[0] < 17)) {
+            while (r[1] < 17 || (r[1] > 21 && r[0] < 17)) {
                 let card = this.cards.pop();
                 this.dcards.push(card);
-                if(this.C.isBust(this.dcards) || this.C.isBlackJack(this.dcards)) {
+                if (this.C.isBust(this.dcards) || this.C.isBlackJack(this.dcards)) {
                     break;
                 }
                 r = this.C.getSum(this.dcards);
             }
 
             io.sockets.in(roomId).emit('dealerplay', {
-                dc : this.dcards
+                dc: this.dcards
             });
 
             return;
         }
 
         io.sockets.in(roomId).emit('turn', {
-            userId : userList[this.turn]
+            userId: userList[this.turn]
         });
-        this.turn+=1;
+        this.turn += 1;
 
     }
 
@@ -128,9 +137,9 @@ module.exports = class Game {
         let card = this.cards.pop();
 
         io.sockets.in(roomId).emit('hit', {
-            id : id,
-            card : card,
-            isEnd : isEnd
+            id: id,
+            card: card,
+            isEnd: isEnd
         });
 
     }
@@ -139,9 +148,9 @@ module.exports = class Game {
         let card = this.cards.pop();
 
         io.sockets.in(roomId).emit('doubledown', {
-            id : id,
-            card : card,
-            isEnd : isEnd
+            id: id,
+            card: card,
+            isEnd: isEnd
         });
     }
 
