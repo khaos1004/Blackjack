@@ -200,7 +200,7 @@ io.on('connection', (socket) => {
       // }
 
       // Make a POST request to the API
-      const response = await axios.post('https://svr.sotong.com/game/result', payload);
+      const response = await axios.post('http://1.201.162.165/game/result', payload);
 
       console.log('API response:', response.data);
 
