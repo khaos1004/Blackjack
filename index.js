@@ -9,8 +9,9 @@ const axios = require('axios'); // axios 추가
 
 // 🔹 SSL 인증서 파일 로드
 const options = {
-  key: fs.readFileSync('/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
-  cert: fs.readFileSync('/assets/ssl/Wildcard.sotong.com_pem.pem'),
+  key: fs.readFileSync('assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
+  
+  cert: fs.readFileSync('assets/ssl/Wildcard.sotong.com_pem.pem'),
 };
 
 const server = http.createServer(options, app);
