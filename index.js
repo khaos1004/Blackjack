@@ -1,7 +1,14 @@
 const express = require('express');
 const app = express();
 const http = require('http');
-const server = http.createServer(app);
+
+// 🔹 SSL 인증서 파일 로드
+const options = {
+  key: fs.readFileSync('/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
+  cert: fs.readFileSync('/assets/ssl/Wildcard.sotong.com_pem.pem'),
+};
+
+const server = http.createServer(options, app);
 const { Server } = require("socket.io");
 const io = new Server(server, {
   cors: {
@@ -14,6 +21,8 @@ const { MIMEType } = require('util');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios'); // axios 추가
+
+
 
 app.use('/assets', express.static(__dirname + '/assets'));
 
@@ -59,8 +68,8 @@ io.on('connection', (socket) => {
   // 1분마다 API 요청 보내기
   const intervalId = setInterval(async () => {
     try {
-      // const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
-      const response = await axios.post('http://localhost:8080/api/v1/rewards/game', {
+      const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
+      // const response = await axios.post('http://localhost:8080/api/v1/rewards/game', {
       });
       console.log(`API Response for ${socket.id}:`, response.data);
       // 소켓에 API 응답 보내기 (옵션)
