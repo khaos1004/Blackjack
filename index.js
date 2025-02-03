@@ -1,6 +1,11 @@
 const express = require('express');
 const app = express();
 const http = require('http');
+const Game = require('./game');
+const { MIMEType } = require('util');
+const path = require('path');
+const fs = require('fs');
+const axios = require('axios'); // axios 추가
 
 // 🔹 SSL 인증서 파일 로드
 const options = {
@@ -16,11 +21,7 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });;
-const Game = require('./game');
-const { MIMEType } = require('util');
-const path = require('path');
-const fs = require('fs');
-const axios = require('axios'); // axios 추가
+
 
 
 
