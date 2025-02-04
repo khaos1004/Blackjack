@@ -15,7 +15,7 @@ const options = {
 }
 
 // const server = http.createServer(options, app);
-https.createServer(options, (req, res) => {
+const server = https.createServer(options, (req, res) => {
   res.writeHead(200);
   res.end('Hello HTTPS!');
 }).listen(443);
