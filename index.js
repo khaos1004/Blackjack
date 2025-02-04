@@ -15,10 +15,10 @@ const options = {
 }
 
 // const server = http.createServer(options, app);
-const server = https.createServer(options, (req, res) => {
-  res.writeHead(200);
-  res.end('Hello HTTPS!');
-}).listen(3001);
+const server = https.createServer(options, app);
+server.listen(3001, () => {
+  console.log('tomato BLACKJACK◇♠♡♣ server listening on *:3001');
+});
 
 const { Server } = require("socket.io");
 const io = new Server(server, {
