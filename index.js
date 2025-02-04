@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const http = require('http');
+const https = require('https');
 const Game = require('./game');
 const { MIMEType } = require('util');
 const path = require('path');
