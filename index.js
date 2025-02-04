@@ -11,7 +11,7 @@ const axios = require('axios'); // axios 추가
 const options = {
   key: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
   cert: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/Wildcard.sotong.com_pem.pem'),
-  // ca: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/intermediate.pem') 
+  ca: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/intermediate.pem') 
 }
 
 // const server = http.createServer(options, app);
@@ -23,10 +23,7 @@ const io = new Server(server, {
     origin: '*',
     methods: ['GET', 'POST'],
   },
-});;
-
-
-
+});
 
 app.use('/assets', express.static(__dirname + '/assets'));
 
