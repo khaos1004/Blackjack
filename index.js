@@ -243,7 +243,7 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(3001, () => {
+server.listen(3001, '0.0.0.0', () => {
   console.log('tomato BLACKJACK◇♠♡♣ server listening on *:3001');
 
 });
