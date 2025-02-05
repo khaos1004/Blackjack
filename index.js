@@ -193,36 +193,36 @@ io.on('connection', (socket) => {
   });
 
   // Listen for the 'gameResult' event
-  socket.on('gameResult', async ({ winners, losers }) => {
-    try {
-      // console.log('Received gameResult:', { winners, losers });
+  // socket.on('gameResult', async ({ winners, losers }) => {
+  //   try {
+  //     // console.log('Received gameResult:', { winners, losers });
 
-      // // Determine the payload based on whether it's a win or a loss
-      // let payload = {};
-      // if (winners) {
-      //   payload = { winners };
-      //   console.log('Winner data:', winners);
-      // } else if (losers) {
-      //   payload = { losers };
-      //   console.log('Loser data:', losers);
-      // } else {
-      //   throw new Error('No winners or losers data provided');
-      // }
+  //     // // Determine the payload based on whether it's a win or a loss
+  //     // let payload = {};
+  //     // if (winners) {
+  //     //   payload = { winners };
+  //     //   console.log('Winner data:', winners);
+  //     // } else if (losers) {
+  //     //   payload = { losers };
+  //     //   console.log('Loser data:', losers);
+  //     // } else {
+  //     //   throw new Error('No winners or losers data provided');
+  //     // }
 
-      // Make a POST request to the API
-      const response = await axios.post('http://1.201.162.165/game/result', payload);
+  //     // Make a POST request to the API
+  //     const response = await axios.post('http://1.201.162.165/game/result', payload);
 
-      console.log('API response:', response.data);
+  //     console.log('API response:', response.data);
 
-      // Send a success response back to the client
-      // socket.emit('gameResultResponse', { success: true, data: response.data });
-    } catch (error) {
-      console.error('Error calling the API:', error.message);
+  //     // Send a success response back to the client
+  //     // socket.emit('gameResultResponse', { success: true, data: response.data });
+  //   } catch (error) {
+  //     console.error('Error calling the API:', error.message);
 
-      // Send an error response back to the client
-      // socket.emit('gameResultResponse', { success: false, error: error.message });
-    }
-  });
+  //     // Send an error response back to the client
+  //     // socket.emit('gameResultResponse', { success: false, error: error.message });
+  //   }
+  // });
 
   socket.on('disconnecting', () => {
     clearInterval(intervalId);
