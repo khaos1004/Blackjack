@@ -59,6 +59,11 @@ app.get('/', (req, res) => {
   });
 });
 
+// 🔥 favicon.ico 요청을 처리하도록 설정
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // No Content (빈 응답)
+});
+
 io.on('connection', (socket) => {
   const referer = socket.handshake.headers.referer;
   const urlParams = new URLSearchParams(new URL(referer).search);
