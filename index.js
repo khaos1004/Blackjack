@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
-const https = require('https');
+// const https = require('https');
+const http = require('http');
 const Game = require('./game');
 const { MIMEType } = require('util');
 const path = require('path');
@@ -8,14 +9,15 @@ const fs = require('fs');
 const axios = require('axios'); // axios 추가
 
 // 🔹 SSL 인증서 파일 로드
-const options = {
-  key: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
-  cert: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/Wildcard.sotong.com_pem.pem'),
-  ca: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/intermediate.pem') 
-}
+// const options = {
+//   key: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
+//   cert: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/Wildcard.sotong.com_pem.pem'),
+//   ca: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/intermediate.pem') 
+// }
 
 // const server = http.createServer(options, app);
-const server = https.createServer(options, app);
+// const server = http.createServer(options, app);
+const server = http.createServer(app);
 
 const { Server } = require("socket.io");
 const io = new Server(server, {
