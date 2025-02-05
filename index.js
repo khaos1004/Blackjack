@@ -225,7 +225,7 @@ io.on('connection', (socket) => {
   // });
 
   socket.on('disconnecting', () => {
-    clearInterval(intervalId);
+    // clearInterval(intervalId);
     if (socket.rooms.size < 2) {
       return;
     }
