@@ -1043,13 +1043,12 @@
                 $('#my-point').html(point);
 
                 const requestData = {
-                    winners: [
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
                         }
-                    ],
-                    losers: []
+                    ]
                 };
 
                 fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
@@ -1073,9 +1072,8 @@
                 $('#game-result').css('color', '#8989ef');
                 $('#game-result').html('😭LOSE');
 
-                const requestData = {
-                    winners: [],
-                    losers: [
+                const requestData = {                    
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
@@ -1105,13 +1103,12 @@
                 $('#my-point').html(point);
 
                 const requestData = {
-                    winners: [
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
                         }
-                    ],
-                    losers: []
+                    ]
                 };
 
                 fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
@@ -1183,13 +1180,12 @@
                 }
                 $('#my-point').html(point);
                 const requestData = {
-                    winners: [
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
                         }
-                    ],
-                    losers: []
+                    ]
                 };
 
                 fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
@@ -1211,11 +1207,8 @@
                 console.log('user is lose');
                 $('#game-result2').css('color', '#8989ef');
                 $('#game-result2').html('😭LOSE');
-                const requestData = {
-                    winners: [
-
-                    ],
-                    losers: [
+                const requestData = {                    
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
@@ -1244,13 +1237,11 @@
                 point += betPrice2;
                 $('#my-point').html(point);
                 const requestData = {
-                    winners: [
+                    gamers: [
                         {
                             userkey: decodedUserkey,
                             nyangAmount: point // 현재 포인트 값 전송
                         }
-                    ],
-                    losers: [
                     ]
                 };
 
