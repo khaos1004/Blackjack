@@ -32,7 +32,7 @@ app.use('/assets', express.static(__dirname + '/assets'));
 let game = new Map();
 
 app.get('/', (req, res) => {
-  const { name, nyang } = req.query; // 쿼리 파라미터 추출  
+  const { name, nyang, userkey } = req.query; // 쿼리 파라미터 추출  
 
   console.log(`Player Name: ${name}, Bet: ${nyang}`);
 
@@ -53,6 +53,7 @@ app.get('/', (req, res) => {
       `<script id="server-data">        
         const playerName = "${name}";
         const nyang = ${nyang};        
+        const userkey = "${userkey}"; 
       </script>`
     );
 
@@ -74,18 +75,20 @@ io.on('connection', (socket) => {
   const nyang = urlParams.get('nyang');
 
   // 1분마다 API 요청 보내기
-  // const intervalId = setInterval(async () => {
-  //   try {
-  //     const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
-  //     // const response = await axios.post('http://localhost:8080/api/v1/rewards/game', {
-  //     });
-  //     console.log(`API Response for ${socket.id}:`, response.data);
-  //     // 소켓에 API 응답 보내기 (옵션)
-  //     // socket.emit('api_data', response.data);
-  //   } catch (error) {
-  //     console.error(`API request failed for ${socket.id}:`, error.message);
-  //   }
-  // }, 60000); // 60,000ms = 1분
+  const intervalId = setInterval(async () => {
+    try {
+      const decoded = decodeURIComponent(userkey);
+      console.log('decoded: ' + decoded); // 출력: !
+      const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
+      userkey: decoded,      
+      });
+      console.log(`API Response for ${socket.id}:`, response.data);
+      // 소켓에 API 응답 보내기 (옵션)
+      // socket.emit('api_data', response.data);
+    } catch (error) {
+      console.error(`API request failed for ${socket.id}:`, error.message);
+    }
+  }, 60000); // 60,000ms = 1분
 
 
 

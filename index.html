@@ -273,7 +273,7 @@
         socket.on('user_info', ({ users, result }) => {
             let isJoin = false;
             if (users.length > 0) {
-                $('#dark').css('display', 'block');               
+                $('#dark').css('display', 'block');
                 if (users[0] === myId) {
                     $("#game-start").css('display', 'block');
                 }
@@ -575,6 +575,7 @@
         let isSplitEnd = false;
         let isUserBust = false;
         let isUserBlackJack = false;
+        const decodedUserkey = decodeURIComponent(userkey);
 
 
         function initValues() {
@@ -1040,17 +1041,93 @@
                     point += betPrice * 0.5;
                 }
                 $('#my-point').html(point);
+
+                const requestData = {
+                    winners: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ],
+                    losers: []
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
+
             } else if (win < 0) {
                 $('#my-point').html(point);
                 console.log('user is lose');
                 $('#game-result').css('color', '#8989ef');
                 $('#game-result').html('😭LOSE');
+
+                const requestData = {
+                    winners: [],
+                    losers: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ]
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
             } else {
                 console.log('push');
                 $('#game-result').css('color', '#89ef89');
                 $('#game-result').html('🥶PUSH');
                 point += betPrice;
                 $('#my-point').html(point);
+
+                const requestData = {
+                    winners: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ],
+                    losers: []
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
             }
 
             $('#dark').css('display', 'block');
@@ -1105,17 +1182,92 @@
                     point += betPrice2 * 0.5;
                 }
                 $('#my-point').html(point);
+                const requestData = {
+                    winners: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ],
+                    losers: []
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
             } else if (win < 0) {
                 $('#my-point').html(point);
                 console.log('user is lose');
                 $('#game-result2').css('color', '#8989ef');
                 $('#game-result2').html('😭LOSE');
+                const requestData = {
+                    winners: [
+
+                    ],
+                    losers: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ]
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
             } else {
                 console.log('push');
                 $('#game-result2').css('color', '#89ef89');
                 $('#game-result2').html('🥶PUSH');
                 point += betPrice2;
                 $('#my-point').html(point);
+                const requestData = {
+                    winners: [
+                        {
+                            userkey: decodedUserkey,
+                            nyangAmount: point // 현재 포인트 값 전송
+                        }
+                    ],
+                    losers: [
+                    ]
+                };
+
+                fetch('https://svr.sotong.com/api/game-result', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+                    })
+                    .catch(error => {
+                        console.error('에러 발생:', error);
+                    });
             }
 
             if (point < 0) {
