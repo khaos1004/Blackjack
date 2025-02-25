@@ -1,22 +1,12 @@
 const express = require('express');
 const app = express();
-// const https = require('https');
 const http = require('http');
 const Game = require('./game');
 const { MIMEType } = require('util');
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios'); // axios 추가
+const axios = require('axios');
 
-// 🔹 SSL 인증서 파일 로드
-// const options = {
-//   key: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/KeyFile_Wildcard.sotong.com_pem.key'),
-//   cert: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/Wildcard.sotong.com_pem.pem'),
-//   ca: fs.readFileSync('/opt/game/black/Blackjack/assets/ssl/intermediate.pem') 
-// }
-
-// const server = http.createServer(options, app);
-// const server = http.createServer(options, app);
 const server = http.createServer(app);
 
 const { Server } = require("socket.io");
@@ -24,6 +14,7 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
+    withCredentials: false
   },
 });
 
@@ -32,14 +23,12 @@ app.use('/assets', express.static(__dirname + '/assets'));
 let game = new Map();
 
 app.get('/', (req, res) => {
-  const { name, nyang, userkey } = req.query; // 쿼리 파라미터 추출  
+  const { name, nyang, userkey } = req.query;
 
   console.log(`Player Name: ${name}, Bet: ${nyang}`);
 
-  // index.html 파일 경로
   const filePath = path.join(__dirname, 'index.html');
 
-  // HTML 파일 읽기
   fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) {
       console.error("Error reading HTML file:", err);
@@ -47,7 +36,6 @@ app.get('/', (req, res) => {
       return;
     }
 
-    // HTML 파일에 데이터를 삽입
     const updatedHtml = html.replace(
       '<script id="server-data"></script>',
       `<script id="server-data">        
@@ -57,15 +45,36 @@ app.get('/', (req, res) => {
       </script>`
     );
 
-    // 수정된 HTML 전송
     res.send(updatedHtml);
   });
 });
 
-// 🔥 favicon.ico 요청을 처리하도록 설정
 app.get('/favicon.ico', (req, res) => {
-  res.status(204).end(); // No Content (빈 응답)
+  res.status(204).end();
 });
+
+// ✅ 모든 사용자에게 방 리스트 전송하도록 수정 (가장 안정적인 방법)
+// function updateUserRoomList() {
+//   for (let [id, socket] of io.of("/").sockets) {
+//       const userRoomNames = Object.values(socket.roomNames || {});
+//       console.log(`Sending room list to ${id}:`, userRoomNames);  // ✅ 디버깅용
+//       socket.emit('room_list', userRoomNames); // ✅ 각 사용자의 클라이언트로 전송
+//   }
+// }
+
+// ✅ 모든 사용자에게 동일한 방 리스트 전송
+function updateUserRoomList() {
+  const rooms = Array.from(io.sockets.adapter.rooms.entries());
+  const roomData = rooms.map(([roomId, sockets]) => ({
+    id: roomId,
+    count: sockets.size, // ✅ 현재 방의 인원 수
+  })).filter(room => !io.sockets.adapter.sids.has(room.id)); // 개인 소켓 제외
+
+  console.log('🔥 Broadcasting room list:', roomData);
+  io.emit('room_list', roomData); // ✅ 모든 클라이언트에게 방 리스트 전송
+}
+
+
 
 io.on('connection', (socket) => {
   const referer = socket.handshake.headers.referer;
@@ -74,86 +83,81 @@ io.on('connection', (socket) => {
   const userkey = urlParams.get('userkey');
   const nyang = urlParams.get('nyang');
 
-  // 1분마다 API 요청 보내기
-  const intervalId = setInterval(async () => {
-    try {
-      const decoded = decodeURIComponent(userkey);
-      console.log('decoded: ' + decoded); // 출력: !
-      const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
-      userkey: decoded,      
-      });
-      console.log(`API Response for ${socket.id}:`, response.data);
-      // 소켓에 API 응답 보내기 (옵션)
-      // socket.emit('api_data', response.data);
-    } catch (error) {
-      console.error(`API request failed for ${socket.id}:`, error.message);
-    }
-  }, 60000); // 60,000ms = 1분
+  socket.roomNames = {}; // ✅ 사용자가 입력한 방 번호 저장 객체
 
+  // ✅ 사용자가 접속 시 현재 속한 방 리스트 전송
+  updateUserRoomList();
 
+  // const intervalId = setInterval(async () => {
+  //   try {
+  //     const decoded = decodeURIComponent(userkey);
+  //     console.log('decoded: ' + decoded);
+  //     const response = await axios.post('https://svr.sotong.com/api/v1/rewards/game', {
+  //       userkey: decoded,
+  //     });
+  //     console.log(`API Response for ${socket.id}:`, response.data);
+  //   } catch (error) {
+  //     console.error(`API request failed for ${socket.id}:`, error.message);
+  //   }
+  // }, 60000);
 
-  // 사용자 이름을 socket 객체에 저장
   socket.playerName = name;
-
-  console.log('a user connected ' + name);
+  console.log('A user connected: ' + name);
 
   socket.emit('welcome', {
     id: socket.id,
     username: name
-    // id : name
   });
 
+  // ✅ 사용자가 방에 입장할 때 입력한 방 번호 저장 및 리스트 업데이트
   socket.on('room_join', ({ id }) => {
     let room = io.sockets.adapter.rooms.get(id);
-    if (room != null) {
-      let roomSize = room.size;
-      console.log(`room<${id}> user length = ${roomSize}`);
-      if (roomSize >= 3) {
-        socket.emit('room_join', {
-          result: "fail",
-          error: "full"
-        });
-        return;
-      }
+
+    // ✅ 방이 존재하고 인원이 3명이면 입장 불가
+    if (room && room.size >= 3) {
+      socket.emit('room_join', {
+        result: "fail",
+        error: "full" // ✅ 풀방 메시지 전송
+      });
+      console.log(`❌ Room ${id} is full.`);
+      return;
     }
 
     socket.join(id);
-    console.log("***id: " + id);
-    let users = io.sockets.adapter.rooms.get(id);
+    socket.roomNames[id] = id;
+    console.log(`✅ User ${socket.id} joined room ${id}`);
 
-    console.log("***users: " + users[0]);
-    if (users == null) {
-      users = [];
-    }
+    let users = io.sockets.adapter.rooms.get(id) || [];
     io.sockets.in(id).emit('user_info', {
       users: Array.from(users),
-      result: "success"
+      count: users.size,
+      id: id,
     });
 
-    console.log(`${socket.id} is joined ROOM ID<${id}>.`);
     socket.emit('room_join', {
-      result: "success"
+      result: "success",
+      id: id
     });
+
+    updateUserRoomList(); // ✅ 모든 사용자에게 방 리스트 전송
   });
 
+
+  // ✅ 사용자가 방에서 나갈 때 해당 방 번호 삭제
   socket.on('room_leave', ({ id }) => {
     socket.leave(id);
-    let users = io.sockets.adapter.rooms.get(id);
-    console.log(users);
-    if (users == null) {
-      users = [];
-    }
-    socket.emit('user_info', {
-      users: Array.from(users),
-      result: "success"
-    });
+    delete socket.roomNames[id];
+    console.log(`User ${socket.id} left room ${id}`);
+
+    let users = io.sockets.adapter.rooms.get(id) || [];
     io.sockets.in(id).emit('user_info', {
       users: Array.from(users),
-      result: "success"
+      count: users.length,
+      id: id,
     });
-    socket.emit("room_leave", {
-      result: "success"
-    });
+
+    socket.emit('room_leave', { result: "success" });
+    updateUserRoomList(); // ✅ 모든 사용자에게 전송
   });
 
   socket.on("game_start", () => {
@@ -167,8 +171,6 @@ io.on('connection', (socket) => {
 
     game.get(roomId).init();
     game.get(roomId).start(io, Array.from(users), roomId);
-
-
   });
 
   socket.on('betting-done', () => {
@@ -202,58 +204,19 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Listen for the 'gameResult' event
-  // socket.on('gameResult', async ({ winners, losers }) => {
-  //   try {
-  //     // console.log('Received gameResult:', { winners, losers });
-
-  //     // // Determine the payload based on whether it's a win or a loss
-  //     // let payload = {};
-  //     // if (winners) {
-  //     //   payload = { winners };
-  //     //   console.log('Winner data:', winners);
-  //     // } else if (losers) {
-  //     //   payload = { losers };
-  //     //   console.log('Loser data:', losers);
-  //     // } else {
-  //     //   throw new Error('No winners or losers data provided');
-  //     // }
-
-  //     // Make a POST request to the API
-  //     const response = await axios.post('http://1.201.162.165/game/result', payload);
-
-  //     console.log('API response:', response.data);
-
-  //     // Send a success response back to the client
-  //     // socket.emit('gameResultResponse', { success: true, data: response.data });
-  //   } catch (error) {
-  //     console.error('Error calling the API:', error.message);
-
-  //     // Send an error response back to the client
-  //     // socket.emit('gameResultResponse', { success: false, error: error.message });
-  //   }
-  // });
-
   socket.on('disconnecting', () => {
-    // clearInterval(intervalId);
-    if (socket.rooms.size < 2) {
-      return;
-    }
-    let roomId = Array.from(socket.rooms)[1];
-    let users = io.sockets.adapter.rooms.get(roomId);
-    users.delete(socket.id);
-    io.sockets.in(roomId).emit('user_info', {
-      users: Array.from(users),
-      result: "success"
+    Object.keys(socket.roomNames).forEach(roomId => {
+      delete socket.roomNames[roomId]; // ✅ 사용자가 떠날 때 모든 방 제거
     });
+    console.log(`User ${socket.id} disconnecting.`);
   });
 
   socket.on('disconnect', () => {
-    console.log("a user disconnected, " + socket.id);
+    console.log(`User ${socket.id} disconnected.`);
+    updateUserRoomList(); // ✅ 사용자가 접속 종료 시 리스트 업데이트
   });
 });
 
 server.listen(3001, () => {
   console.log('tomato BLACKJACK◇♠♡♣ server listening on *:3001');
-
 });

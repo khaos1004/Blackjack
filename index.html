@@ -18,15 +18,24 @@
 
         <div id="game-start" style="position:absolute; z-index: 99; color:whtie; width:1024px; text-align: center;
             top:200px; display: none;">
-            <button style="font-size:30px; width:300px; height:80px; border-radius: 20px; 
+            <button style="font-size:30px; width:200px; height:60px; border-radius: 20px; 
                 background:linear-gradient(#c79ebe,#ff84bd ); color:white;" onclick="gamestart()">게임시작</button>
+            <button style="font-size:30px; width:200px; height:60px; border-radius: 20px; 
+                background:linear-gradient(#968f94,#837a7e ); color:white;" onclick="leaveIn()">나가기</button>
         </div>
 
         <div id="room" style="position: absolute; z-index: 99; width:1024px; text-align: center; display: none;">
-            <p style="color:white; font-size:30px;">방번호 입력</p>
+            <p style="color:white; font-size:30px;">방이름 입력</p>
             <input type="text" style="font-size:30px;text-align: center;" value="456" id="room_id">
             <button style="font-size:30px;" onclick="enter()">접속</button>
             <button style="font-size:30px;" onclick="leave()">나가기</button>
+
+            <div id="room-list" style="margin-top: 20px;">
+                <h2 style="color:white; font-size:24px;">방 목록</h2>
+                <ul id="room-list-container" style="color:white; font-size:20px; list-style: none; padding: 0;"></ul>
+                <div id="room-info" style="color:white; font-size:20px; margin-top: 10px;"></div>
+
+            </div>
         </div>
 
         <div id="insu-group" style="position:absolute; z-index:99; display: none;">
@@ -199,7 +208,7 @@
 
 
     <script src="/assets/js/jquery.min.js"></script>
-    <script src="/assets/js/index.js_h"></script>
+    <script src="/assets/js/index_h.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
 
@@ -251,27 +260,50 @@
             $('#myid-text').html(username + "님");
         });
 
-        socket.on("room_join", ({ result, error }) => {
-            console.log("room join is " + result);
-            if (error) {
-                joinRoomId = null;
-                alert("room join is fail / " + error);
-                return;
-            } else {
-                alert("room join is " + result);
+        // socket.on("room_join", ({ result, error }) => {
+        //     console.log("room join is " + result);
+        //     if (error) {
+        //         joinRoomId = null;
+        //         alert("room join is fail / " + error);
+        //         return;
+        //     } else {
+        //         alert("room join is " + result);
+        //         $('#room').css('display', 'none');
+        //     }
+        // });
+
+        // socket.on("room_leave", ({ result }) => {
+        //     if (result === "success") {
+        //         joinRoomId = null;
+        //     }
+        //     alert("room leave is " + result);
+        // });
+        // ✅ 방 입장 시 알림 및 UI 변경
+        socket.on("room_join", ({ result, error, id }) => {
+            if (result === "fail" && error === "full") {
+                alert(`❌ 방 ${id}은(는) 이미 3명으로 꽉 찼습니다.`);
+                joinRoomId = null; // ✅ 입장 실패 시 joinRoomId 초기화
+            } else if (result === "success") {
+                console.log(`✅ Entered room ${id}`);
                 $('#room').css('display', 'none');
+                alert(`🎉 방 ${id}에 입장하였습니다.`);
             }
         });
 
-        socket.on("room_leave", ({ result }) => {
-            if (result === "success") {
-                joinRoomId = null;
-            }
-            alert("room leave is " + result);
+
+        // ✅ 방 나가기 시 알림 및 UI 변경
+        socket.on("room_leave", () => {
+            console.log(`🚪 Left the room`);
+            joinRoomId = null;
+            alert("방에서 나갔습니다.");
+            $('#room').css('display', 'block');
         });
+
+
 
         socket.on('user_info', ({ users, result }) => {
             let isJoin = false;
+
             if (users.length > 0) {
                 $('#dark').css('display', 'block');
                 if (users[0] === myId) {
@@ -546,6 +578,9 @@
             });
 
             $('#room_id').val("");
+        }
+        function leaveIn() {
+            location.reload(true)
         }
     </script>
 
@@ -1072,7 +1107,7 @@
                 $('#game-result').css('color', '#8989ef');
                 $('#game-result').html('😭LOSE');
 
-                const requestData = {                    
+                const requestData = {
                     gamers: [
                         {
                             userkey: decodedUserkey,
@@ -1207,7 +1242,7 @@
                 console.log('user is lose');
                 $('#game-result2').css('color', '#8989ef');
                 $('#game-result2').html('😭LOSE');
-                const requestData = {                    
+                const requestData = {
                     gamers: [
                         {
                             userkey: decodedUserkey,
@@ -1278,6 +1313,74 @@
         }
 
         start();
+
+        // ✅ 클라이언트에서 방 리스트 표시 및 클릭 시 입장
+        window.onload = () => {
+            socket.on('room_list', (rooms) => {
+                console.log('🔥 Received room list:', rooms);
+                const roomListContainer = document.getElementById('room-list-container');
+                if (!roomListContainer) {
+                    console.error('❌ Error: #room-list-container not found in the DOM.');
+                    return;
+                }
+                roomListContainer.innerHTML = '';
+
+                if (rooms.length === 0) {
+                    roomListContainer.innerHTML = '<li>현재 대기중인 방이 없습니다.</li>';
+                } else {
+                    rooms.forEach(room => {
+                        const li = document.createElement('li');
+                        li.textContent = `방 번호: ${room.id} (인원: ${room.count}/3)`;
+
+                        // ✅ 인원이 3명일 경우 클릭 비활성화
+                        if (room.count >= 3) {
+                            li.style.color = 'gray'; // ✅ 색상을 회색으로 표시
+                            li.style.cursor = 'not-allowed'; // ✅ 마우스 커서를 비활성화
+                        } else {
+                            li.style.cursor = 'pointer'; // ✅ 입장 가능한 경우 포인터
+                            li.onclick = () => joinRoom(room.id); // ✅ 클릭 시 입장
+                        }
+                        roomListContainer.appendChild(li);
+                    });
+                }
+            });
+        };
+
+
+        function joinRoom(roomId) {
+            if (joinRoomId != null) {
+                alert('ERROR: 이미 입장한 방이 있습니다.');
+                return;
+            }
+            joinRoomId = roomId;
+            socket.emit('room_join', { id: roomId });
+            console.log(`✅ Entering room ${roomId}`);
+        }
+
+
+        // ✅ 방 입장
+        function enter() {
+            if (joinRoomId != null) {
+                alert('ERROR: 이미 입장한 방이 있습니다.');
+                return;
+            }
+            const roomId = document.getElementById('room_id').value;
+            joinRoomId = roomId;
+
+            socket.emit('room_join', { id: roomId });
+        }
+
+        // ✅ 방 나가기
+        function leave() {
+            if (joinRoomId == null) {
+                alert('ERROR: 입장한 방이 없습니다.');
+                return;
+            }
+
+            socket.emit('room_leave', { id: joinRoomId });
+            joinRoomId = null;
+        }
+
 
     </script>
 </body>
