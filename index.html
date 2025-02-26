@@ -226,21 +226,20 @@
     <script>
 
         function updateUserInfo() {
-
             for (var i = 1; i <= 2; i++) {
                 $(`#user${i}-text`).html("");
             }
 
             let cnt = 0;
-            for (var u of userList) {
-                if (u == myId) {
+            for (let i = 0; i < userList.length; i++) {
+                if (userList[i] == myId) {
                     continue;
                 }
                 ++cnt;
-                $(`#user${cnt}-text`).html(playerName + "님");
-
+                $(`#user${cnt}-text`).html(userNameList[i] + "님");  // 🔥 이름 표시
             }
         }
+
 
         function gamestart() {
             if (myId != null && userList != null && userList.length > 1) {
@@ -278,20 +277,21 @@
         //     }
         //     alert("room leave is " + result);
         // });
-        // ✅ 방 입장 시 알림 및 UI 변경
+        //  방 입장 시 알림 및 UI 변경
         socket.on("room_join", ({ result, error, id }) => {
             if (result === "fail" && error === "full") {
                 alert(`❌ 방 ${id}은(는) 이미 3명으로 꽉 찼습니다.`);
-                joinRoomId = null; // ✅ 입장 실패 시 joinRoomId 초기화
+                joinRoomId = null; //  입장 실패 시 joinRoomId 초기화
             } else if (result === "success") {
-                console.log(`✅ Entered room ${id}`);
+                console.log(` Entered room ${id}`);
                 $('#room').css('display', 'none');
-                alert(`🎉 방 ${id}에 입장하였습니다.`);
+                // alert(` 방 ${id}에 입장하였습니다.`);
+                alert(` 방에 입장 하였습니다.`);
             }
         });
 
 
-        // ✅ 방 나가기 시 알림 및 UI 변경
+        //  방 나가기 시 알림 및 UI 변경
         socket.on("room_leave", () => {
             console.log(`🚪 Left the room`);
             joinRoomId = null;
@@ -301,9 +301,8 @@
 
 
 
-        socket.on('user_info', ({ users, result }) => {
+        socket.on('user_info', ({ users, userNames, result }) => {
             let isJoin = false;
-
             if (users.length > 0) {
                 $('#dark').css('display', 'block');
                 if (users[0] === myId) {
@@ -311,7 +310,6 @@
                 }
             }
             for (var u of users) {
-
                 if (u === myId) {
                     isJoin = true;
                     break;
@@ -319,9 +317,11 @@
             }
             if (isJoin) {
                 userList = users;
+                userNameList = userNames;  // 🔥 이름 리스트 추가
                 console.log(JSON.stringify(users));
             } else {
                 userList = [];
+                userNameList = [];
             }
             updateUserInfo();
         });
@@ -1070,7 +1070,7 @@
             if (win > 0) {
                 console.log('user is win');
                 $('#game-result').css('color', '#ef8989');
-                $('#game-result').html('🎉WIN');
+                $('#game-result').html('WIN');
                 point += betPrice * 2;
                 if (ublack) {
                     point += betPrice * 0.5;
@@ -1208,7 +1208,7 @@
             if (win > 0) {
                 console.log('user is win');
                 $('#game-result2').css('color', '#ef8989');
-                $('#game-result2').html('🎉WIN');
+                $('#game-result2').html('WIN');
                 point += betPrice2 * 2;
                 if (ublack) {
                     point += betPrice2 * 0.5;
@@ -1314,7 +1314,7 @@
 
         start();
 
-        // ✅ 클라이언트에서 방 리스트 표시 및 클릭 시 입장
+        //  클라이언트에서 방 리스트 표시 및 클릭 시 입장
         window.onload = () => {
             socket.on('room_list', (rooms) => {
                 console.log('🔥 Received room list:', rooms);
@@ -1332,13 +1332,13 @@
                         const li = document.createElement('li');
                         li.textContent = `방 번호: ${room.id} (인원: ${room.count}/3)`;
 
-                        // ✅ 인원이 3명일 경우 클릭 비활성화
+                        //  인원이 3명일 경우 클릭 비활성화
                         if (room.count >= 3) {
-                            li.style.color = 'gray'; // ✅ 색상을 회색으로 표시
-                            li.style.cursor = 'not-allowed'; // ✅ 마우스 커서를 비활성화
+                            li.style.color = 'gray'; //  색상을 회색으로 표시
+                            li.style.cursor = 'not-allowed'; //  마우스 커서를 비활성화
                         } else {
-                            li.style.cursor = 'pointer'; // ✅ 입장 가능한 경우 포인터
-                            li.onclick = () => joinRoom(room.id); // ✅ 클릭 시 입장
+                            li.style.cursor = 'pointer'; //  입장 가능한 경우 포인터
+                            li.onclick = () => joinRoom(room.id); //  클릭 시 입장
                         }
                         roomListContainer.appendChild(li);
                     });
@@ -1354,11 +1354,11 @@
             }
             joinRoomId = roomId;
             socket.emit('room_join', { id: roomId });
-            console.log(`✅ Entering room ${roomId}`);
+            console.log(` Entering room ${roomId}`);
         }
 
 
-        // ✅ 방 입장
+        //  방 입장
         function enter() {
             if (joinRoomId != null) {
                 alert('ERROR: 이미 입장한 방이 있습니다.');
@@ -1370,7 +1370,7 @@
             socket.emit('room_join', { id: roomId });
         }
 
-        // ✅ 방 나가기
+        //  방 나가기
         function leave() {
             if (joinRoomId == null) {
                 alert('ERROR: 입장한 방이 없습니다.');
