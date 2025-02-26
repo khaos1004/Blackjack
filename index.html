@@ -1338,6 +1338,8 @@
                             li.style.cursor = 'not-allowed'; //  마우스 커서를 비활성화
                         } else {
                             li.style.cursor = 'pointer'; //  입장 가능한 경우 포인터
+                            li.onmouseover = () => li.style.color = '#00ff00';
+                            li.onmouseout = () => li.style.color = 'white';
                             li.onclick = () => joinRoom(room.id); //  클릭 시 입장
                         }
                         roomListContainer.appendChild(li);
