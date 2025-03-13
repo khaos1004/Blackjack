@@ -117,14 +117,13 @@ async function getWalletAddress(userkey) {
  * @param {string} userkey - 리워드를 받을 유저키
  * @param {number} nyangAmount - 냥코인 금액
  */
-async function RewoadToUser(userkey, nyangAmount) {
-  const apiUrl = 'https://svr.sotong.com/api/v1/games/result/initiation';
+async function RewoadToUser(userkey) {
+  const apiUrl = 'https://svr.sotong.com/api/v1/rewards/game';
   const data = {
     "gamers":
       [
         {
-          "userkey": userkey,
-          "nyangAmount": nyangAmount
+          "userkey": userkey,          
         }
       ]
   };
@@ -216,11 +215,10 @@ io.on('connection', (socket) => {
   console.log(`🔹 유저(${socket.id})의 userkey: ${userkey}`);
 
   // 🔹 1분마다 실행하는 함수 (연결된 유저별로 실행)
-  const intervalId = setInterval(async () => {
-    const nyangAmount = 1000; // 지급할 금액
+  const intervalId = setInterval(async () => {    
 
-    console.log(`1분마다 RewoadToUser() 실행 (유저: ${userkey}, 지급액: ${nyangAmount})`);
-    await RewoadToUser(userkey, nyangAmount);
+    console.log(`1분마다 RewoadToUser() 실행 (유저: ${userkey})`);
+    await RewoadToUser(userkey);
   }, 60000);
 
   socket.roomNames = {}; //  사용자가 입력한 방 번호 저장 객체  
