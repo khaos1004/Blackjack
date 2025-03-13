@@ -101,7 +101,7 @@ async function getWalletAddress(userkey) {
 //       console.error(` 리워드 지급 API 호출 오류 (시도 ${attempt}/${retryCount}): 사용자 ${userWalletAddress}`, error.message);
 //     }
 
-    // 일정 시간 대기 후 재시도 (2초)
+// 일정 시간 대기 후 재시도 (2초)
 //     if (attempt < retryCount) {
 //       console.log(` ${userWalletAddress}의 리워드 지급 재시도 중...`);
 //       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -120,12 +120,7 @@ async function getWalletAddress(userkey) {
 async function RewoadToUser(userkey) {
   const apiUrl = 'https://svr.sotong.com/api/v1/rewards/game';
   const data = {
-    "gamers":
-      [
-        {
-          "userkey": userkey,          
-        }
-      ]
+    "userkey": userkey,
   };
 
   try {
@@ -215,7 +210,7 @@ io.on('connection', (socket) => {
   console.log(`🔹 유저(${socket.id})의 userkey: ${userkey}`);
 
   // 🔹 1분마다 실행하는 함수 (연결된 유저별로 실행)
-  const intervalId = setInterval(async () => {    
+  const intervalId = setInterval(async () => {
 
     console.log(`1분마다 RewoadToUser() 실행 (유저: ${userkey})`);
     await RewoadToUser(userkey);
@@ -288,13 +283,13 @@ io.on('connection', (socket) => {
 
   socket.on("get_uuid", () => {
     if (socket.gameUuid) {
-        console.log(` 유저(${socket.id})의 gameUuid 반환: ${socket.gameUuid}`);
-        socket.emit("uuid_response", socket.gameUuid);
+      console.log(` 유저(${socket.id})의 gameUuid 반환: ${socket.gameUuid}`);
+      socket.emit("uuid_response", socket.gameUuid);
     } else {
-        console.warn( `유저(${socket.id})의 gameUuid 없음`);
-        socket.emit("uuid_response", null);
+      console.warn(`유저(${socket.id})의 gameUuid 없음`);
+      socket.emit("uuid_response", null);
     }
-});
+  });
 
 
   //  사용자가 방에서 나갈 때 해당 방 번호 삭제
