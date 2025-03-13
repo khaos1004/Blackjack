@@ -221,6 +221,8 @@
         let sdcards;
         let sucards;
         let sucards2;
+        let storedGameUuid = null; // 🔹 `gameUuid`를 저장할 변수
+
 
     </script>
     <script>
@@ -236,15 +238,47 @@
                     continue;
                 }
                 ++cnt;
-                $(`#user${cnt}-text`).html(userNameList[i] + "님");  // 🔥 이름 표시
+                $(`#user${cnt}-text`).html(userNameList[i] + "님");  //  이름 표시
             }
         }
 
 
         function gamestart() {
             if (myId != null && userList != null && userList.length > 1) {
+                console.log(userList);
                 socket.emit("game_start");
                 $('#game-start').css('display', 'none');
+
+                const data = {
+                    "type": "BLACK_JACK",
+                    "players": [
+                        userList
+                    ]
+                }
+                fetch('https://svr.sotong.com/api/v1/games/launch', { // 백엔드 엔드포인트
+                    method: 'POST', // 요청 방식
+                    headers: {
+                        'Content-Type': 'application/json' // JSON 형식으로 보냄
+                    },
+                    body: JSON.stringify(data) // JSON 데이터 변환 후 전송
+                })
+                    .then(response => response.json()) // 응답을 JSON으로 변환
+                    .then(data => {
+                        console.log('서버 응답:', data);
+
+                        if (data.gameUuid) { //  `gameUuid`가 존재하는 경우만 실행
+                            console.log(` gameUuid 저장: ${data.gameUuid}`);
+
+                            //  서버로 `uuid_save` 이벤트를 전송하여 저장
+                            socket.emit("uuid_save", data.gameUuid);
+                        } else {
+                            console.warn(" 응답에 gameUuid가 없음");
+                        }
+                    })
+                    .catch(error => {
+                        console.error(' 에러 발생:', error);
+                    });
+
             } else {
                 alert("2인 이상 시작 가능합니다.");
             }
@@ -1038,8 +1072,7 @@
         }
 
         function gameover() {
-            console.log('game over');
-
+            console.log('game over');            
             let win = 0;
             let ubust = isBust(sucards[myId]);
             let ublack = isBlackJack(sucards[myId]);
@@ -1047,7 +1080,10 @@
             let dblack = isBlackJack(sdcards);
             let ur = getSum(sucards[myId]);
             let dr = getSum(sdcards);
+            socket.emit("get_uuid"); // 🔹 서버에 저장된 `gameUuid` 요청
+
             console.log(`${ubust} ${dbust} ${ublack} ${dblack}`);
+
             if ((ubust && dbust) || (ublack && dblack)) {
                 win = 0;
             } else if ((ublack && !dblack) || (!ubust && dbust)) {
@@ -1055,115 +1091,109 @@
             } else if ((!ublack && dblack) || (ubust && !dbust)) {
                 win = -1;
             } else {
-
                 let a = Math.abs(ur[0] - 21);
                 let b = Math.abs(ur[1] - 21);
                 let c = Math.abs(dr[0] - 21);
                 let d = Math.abs(dr[1] - 21);
                 console.log(`${a} ${b} ${c} ${d}`);
-                let uscore = a < b ? a : b;
-                let dscore = c < d ? c : d;
+                let uscore = Math.min(a, b);
+                let dscore = Math.min(c, d);
                 win = dscore - uscore;
             }
 
+            let dealerTip = 0;
+            let totalWinAmount = 0;
 
             if (win > 0) {
                 console.log('user is win');
                 $('#game-result').css('color', '#ef8989');
                 $('#game-result').html('WIN');
-                point += betPrice * 2;
+
+                totalWinAmount = betPrice * 2;
                 if (ublack) {
-                    point += betPrice * 0.5;
+                    totalWinAmount += betPrice * 0.5;
                 }
+
+                dealerTip = totalWinAmount * 0.05; // 🔹 내가 딴 금액의 5% 차감
+                point += totalWinAmount;
+                point -= dealerTip; // 🔹 딜러팁 반영
                 $('#my-point').html(point);
+
+                console.log(`💰 딜러팁 차감: ${dealerTip.toFixed(2)}, 남은 포인트: ${point.toFixed(2)}`);
 
                 const requestData = {
-                    gamers: [
-                        {
-                            userkey: decodedUserkey,
-                            nyangAmount: point // 현재 포인트 값 전송
-                        }
-                    ]
+                    gameId: storedGameUuid ,
+                    dealerTipAmount: dealerTip.toFixed(2) // 🔹 서버에 실제 차감된 딜러팁 전송
                 };
 
-                fetch('https://svr.sotong.com/api/v1/games/result', { // 백엔드 엔드포인트
-                    method: 'POST', // 요청 방식
-                    headers: {
-                        'Content-Type': 'application/json' // JSON 형식으로 보냄
-                    },
-                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                fetch('https://svr.sotong.com/api/v1/games/termination', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
                 })
-                    .then(response => response.json()) // 응답을 JSON으로 변환
-                    .then(data => {
-                        console.log('서버 응답:', data);
-                    })
-                    .catch(error => {
-                        console.error('에러 발생:', error);
-                    });
+                    .then(response => response.json())
+                    .then(data => console.log('서버 응답:', data))
+                    .catch(error => console.error('에러 발생:', error));
 
             } else if (win < 0) {
-                $('#my-point').html(point);
                 console.log('user is lose');
                 $('#game-result').css('color', '#8989ef');
                 $('#game-result').html('😭LOSE');
+                $('#my-point').html(point);
 
                 const requestData = {
                     gamers: [
                         {
                             userkey: decodedUserkey,
-                            nyangAmount: point // 현재 포인트 값 전송
+                            nyangAmount: point
                         }
                     ]
                 };
 
-                fetch('https://svr.sotong.com/api/v1/games/result', { // 백엔드 엔드포인트
-                    method: 'POST', // 요청 방식
-                    headers: {
-                        'Content-Type': 'application/json' // JSON 형식으로 보냄
-                    },
-                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                fetch('https://svr.sotong.com/api/v1/games/termination', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
                 })
-                    .then(response => response.json()) // 응답을 JSON으로 변환
-                    .then(data => {
-                        console.log('서버 응답:', data);
-                    })
-                    .catch(error => {
-                        console.error('에러 발생:', error);
-                    });
+                    .then(response => response.json())
+                    .then(data => console.log('서버 응답:', data))
+                    .catch(error => console.error('에러 발생:', error));
+
             } else {
                 console.log('push');
                 $('#game-result').css('color', '#89ef89');
                 $('#game-result').html('🥶PUSH');
-                point += betPrice;
+
+                totalWinAmount = betPrice;
+                dealerTip = totalWinAmount * 0.05; // 🔹 무승부 시에도 딜러팁 5% 차감
+                point += totalWinAmount;
+                point -= dealerTip; // 🔹 딜러팁 반영
                 $('#my-point').html(point);
+
+                console.log(`💰 딜러팁 차감: ${dealerTip.toFixed(2)}, 남은 포인트: ${point.toFixed(2)}`);
 
                 const requestData = {
                     gamers: [
                         {
                             userkey: decodedUserkey,
-                            nyangAmount: point // 현재 포인트 값 전송
+                            nyangAmount: point
                         }
                     ]
                 };
 
-                fetch('https://svr.sotong.com/api/v1/games/result', { // 백엔드 엔드포인트
-                    method: 'POST', // 요청 방식
-                    headers: {
-                        'Content-Type': 'application/json' // JSON 형식으로 보냄
-                    },
-                    body: JSON.stringify(requestData) // JSON 데이터 변환 후 전송
+                fetch('https://svr.sotong.com/api/v1/games/termination', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
                 })
-                    .then(response => response.json()) // 응답을 JSON으로 변환
-                    .then(data => {
-                        console.log('서버 응답:', data);
-                    })
-                    .catch(error => {
-                        console.error('에러 발생:', error);
-                    });
+                    .then(response => response.json())
+                    .then(data => console.log('서버 응답:', data))
+                    .catch(error => console.error('에러 발생:', error));
             }
 
             $('#dark').css('display', 'block');
             $('#gameover-group').css('display', 'block');
+
             if (point < 0) {
                 $('#restart-btn').css('display', 'none');
             } else {
@@ -1173,8 +1203,8 @@
             if (isSplit) {
                 gameover2();
             }
-
         }
+
 
         function gameover2() {
             let win = 0;
@@ -1386,4 +1416,5 @@
 
     </script>
 </body>
+
 </html>

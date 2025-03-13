@@ -1,5 +1,10 @@
 
 const Common = require('./common');
+const { updateDealerTip } = require('./gameState');
+
+
+
+
 
 module.exports = class Game {
 
@@ -106,31 +111,75 @@ module.exports = class Game {
     }
 
     endturn(io, userList, roomId) {
-        console.log('endturn, turn = ' + this.turn);
-        if (this.turn == userList.length) {
-            //dealer play 
-            let r = this.C.getSum(this.dcards);
-            while (r[1] < 17 || (r[1] > 21 && r[0] < 17)) {
+        console.log('🔄 턴 종료, 현재 턴: ' + this.turn);
+
+        if (this.turn === userList.length) {
+            // 딜러 플레이 시작
+            let dealerSum = this.C.getSum(this.dcards);
+
+            while (dealerSum[1] < 17 || (dealerSum[1] > 21 && dealerSum[0] < 17)) {
                 let card = this.cards.pop();
                 this.dcards.push(card);
+
                 if (this.C.isBust(this.dcards) || this.C.isBlackJack(this.dcards)) {
                     break;
                 }
-                r = this.C.getSum(this.dcards);
+
+                dealerSum = this.C.getSum(this.dcards);
             }
 
-            io.sockets.in(roomId).emit('dealerplay', {
-                dc: this.dcards
-            });
+            io.sockets.in(roomId).emit('dealerplay', { dc: this.dcards });
 
+            // 💰 딜러 플레이 후 보상 정산 실행
+            this.calculateRewards(io, userList, roomId);
             return;
         }
 
-        io.sockets.in(roomId).emit('turn', {
-            userId: userList[this.turn]
-        });
+        io.sockets.in(roomId).emit('turn', { userId: userList[this.turn] });
         this.turn += 1;
+    }
 
+
+    calculateRewards(io, userList, roomId) {
+        console.log("🎲 게임 종료: 보상 정산 시작");
+
+        let totalDealerTip = 0;  // 🔹 이 값을 `blackjack.js`로 넘길 예정
+
+        for (let user of userList) {
+            let playerCards = this.userCard[user];
+            let dealerCards = this.dcards;
+
+            let playerSum = this.C.getSum(playerCards);
+            let dealerSum = this.C.getSum(dealerCards);
+
+            let isPlayerBust = this.C.isBust(playerCards);
+            let isDealerBust = this.C.isBust(dealerCards);
+            let isPlayerBlackjack = this.C.isBlackJack(playerCards);
+            let isDealerBlackjack = this.C.isBlackJack(dealerCards);
+
+            let betAmount = this.bet[user] || 0;
+            let reward = 0;
+
+            if (!isPlayerBust && (isDealerBust || playerSum[1] > dealerSum[1])) {
+                reward = betAmount * 2;
+            } else if (isPlayerBlackjack && !isDealerBlackjack) {
+                reward = betAmount * 2.5;
+            } else if (isPlayerBlackjack && isDealerBlackjack) {
+                reward = betAmount;
+            } else {
+                reward = betAmount;
+            }
+
+            if (reward > 0) {
+                let dealerTip = reward * 0.05;
+                totalDealerTip += dealerTip;
+                reward -= dealerTip;
+                io.to(user).emit('reward', { amount: reward });
+            }
+        }
+
+        // 💰 `blackjack.js`의 `dealerTipTotal`을 업데이트
+        updateDealerTip(totalDealerTip);
     }
 
     hit(io, id, isEnd, roomId) {
