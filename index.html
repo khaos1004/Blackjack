@@ -1080,7 +1080,7 @@
             let dblack = isBlackJack(sdcards);
             let ur = getSum(sucards[myId]);
             let dr = getSum(sdcards);
-            socket.emit("get_uuid"); // 서버에 저장된 `gameUuid` 요청
+            socket.emit("get_uuid");
 
             console.log(`${ubust} ${dbust} ${ublack} ${dblack}`);
 
@@ -1155,8 +1155,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
 
             } else if (win < 0) {
@@ -1167,7 +1170,7 @@
 
                 const terminationData = {
                     gameId: storedGameUuid,
-                    dealerTipAmount: dealerTip.toFixed(2) //  서버에 실제 차감된 딜러팁 전송
+                    dealerTipAmount: 0
                 };
 
                 const nyangData = {
@@ -1199,8 +1202,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
             } else {
                 console.log('push');
@@ -1217,7 +1223,7 @@
 
                 const terminationData = {
                     gameId: storedGameUuid,
-                    dealerTipAmount: dealerTip.toFixed(2) //  서버에 실제 차감된 딜러팁 전송
+                    dealerTipAmount: 0 //  서버에 실제 차감된 딜러팁 전송
                 };
 
                 const nyangData = {
@@ -1249,8 +1255,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
             }
 
@@ -1306,7 +1315,13 @@
                 if (ublack) {
                     point += betPrice2 * 0.5;
                 }
+
+                totalWinAmount = betPrice2;
+                dealerTip = totalWinAmount * 0.05; //  무승부 시에도 딜러팁 5% 차감
+                point += totalWinAmount;
+                point -= dealerTip; //  딜러팁 반영
                 $('#my-point').html(point);
+
                 const terminationData = {
                     gameId: storedGameUuid,
                     dealerTipAmount: dealerTip.toFixed(2) //  서버에 실제 차감된 딜러팁 전송
@@ -1341,17 +1356,21 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
             } else if (win < 0) {
                 $('#my-point').html(point);
                 console.log('user is lose');
                 $('#game-result2').css('color', '#8989ef');
                 $('#game-result2').html('😭LOSE');
+
                 const terminationData = {
                     gameId: storedGameUuid,
-                    dealerTipAmount: dealerTip.toFixed(2) //  서버에 실제 차감된 딜러팁 전송
+                    dealerTipAmount: 0
                 };
 
                 const nyangData = {
@@ -1370,9 +1389,10 @@
                     },
                     body: JSON.stringify(nyangData) // JSON 데이터 변환 후 전송
                 })
-                    .then(response => response.json()) // 응답을 JSON으로 변환
-                    .then(data => {
-                        console.log('서버 응답:', data);
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
                     })
                     .catch(error => {
                         console.error('에러 발생:', error);
@@ -1383,8 +1403,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
             } else {
                 console.log('push');
@@ -1394,7 +1417,7 @@
                 $('#my-point').html(point);
                 const terminationData = {
                     gameId: storedGameUuid,
-                    dealerTipAmount: dealerTip.toFixed(2) //  서버에 실제 차감된 딜러팁 전송
+                    dealerTipAmount: 0
                 };
 
                 const nyangData = {
@@ -1426,8 +1449,11 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(terminationData)
                 })
-                    .then(response => response.json())
-                    .then(data => console.log('서버 응답:', data))
+                    .then(response => {
+                        if (response.status === 200) {
+                            console.log("호출 성공")
+                        }
+                    })
                     .catch(error => console.error('에러 발생:', error));
             }
 
