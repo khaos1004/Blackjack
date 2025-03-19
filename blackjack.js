@@ -39,27 +39,27 @@ const pool = new Pool({
  * @param {string} userkey - 유저 key
  * @returns {Promise<string|null>} - 지갑 주소 반환 (없으면 null)
  */
-async function getWalletAddress(userkey) {
-  const apiUrl = `https://api.otongtong.net/v1/api/external/passtong/coin-info?userkey=${userkey}`;
-  // const apiUrl = `https://api.otongtong.net/v1/api/external/passtong/coin-info?userkey=1722474521!usr-e3ca96b6-0e3a-4e37-ad01-72ba671aabb1`;
+// async function getWalletAddress(userkey) {
+//   const apiUrl = `https://api.otongtong.net/v1/api/external/passtong/coin-info?userkey=${userkey}`;
+//   // const apiUrl = `https://api.otongtong.net/v1/api/external/passtong/coin-info?userkey=1722474521!usr-e3ca96b6-0e3a-4e37-ad01-72ba671aabb1`;
 
-  try {
-    const response = await axios.get(apiUrl);
+//   try {
+//     const response = await axios.get(apiUrl);
 
-    // if (response.status === 200 && response.data.wallet_addr) {
-    if (response.status === 200) {
-      console.log(` 지갑 주소 조회 성공! 사용자: ${userkey}, 주소: ${response.data.value.wallet_addr}`);
-      // console.log(` 지갑 주소 조회 성공! 사용자1: ${userkey}, 주소1: ${response.data.value.wallet_addr}`);
-      return response.data.value.wallet_addr;
-    } else {
-      console.warn(` 사용자 ${userkey}의 지갑 주소 조회 실패`);
-      return null;
-    }
-  } catch (error) {
-    console.error(` API 오류: 사용자 ${userkey}의 지갑 주소 조회 실패`, error.message);
-    return null;
-  }
-}
+//     // if (response.status === 200 && response.data.wallet_addr) {
+//     if (response.status === 200) {
+//       console.log(` 지갑 주소 조회 성공! 사용자: ${userkey}, 주소: ${response.data.value.wallet_addr}`);
+//       // console.log(` 지갑 주소 조회 성공! 사용자1: ${userkey}, 주소1: ${response.data.value.wallet_addr}`);
+//       return response.data.value.wallet_addr;
+//     } else {
+//       console.warn(` 사용자 ${userkey}의 지갑 주소 조회 실패`);
+//       return null;
+//     }
+//   } catch (error) {
+//     console.error(` API 오류: 사용자 ${userkey}의 지갑 주소 조회 실패`, error.message);
+//     return null;
+//   }
+// }
 
 
 /**
@@ -114,8 +114,7 @@ async function getWalletAddress(userkey) {
 
 /**
  * 특정 유저에게 TTR 리워드를 지급하는 API 호출 함수
- * @param {string} userkey - 리워드를 받을 유저키
- * @param {number} nyangAmount - 냥코인 금액
+ * @param {string} userkey - 리워드를 받을 유저키 
  */
 async function RewoadToUser(userkey) {
   const apiUrl = 'https://svr.sotong.com/api/v1/rewards/game';
@@ -127,7 +126,7 @@ async function RewoadToUser(userkey) {
     const response = await axios.post(apiUrl, data);
 
     if (response.status === 200) {
-      console.log(`리워드 지급 성공! 사용자: ${userkey}, 지급액: ${nyangAmount}`);
+      console.log(`리워드 지급 성공! 사용자: ${userkey}`);
       return;
     } else {
       console.error(`리워드 지급 실패 (상태 코드: ${response.status})`, response.data);
@@ -172,6 +171,27 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
+/**
+ * 리워드 함수
+ */
+let rewardIntervalId = null; // 리워드 지급 타이머 ID
+let isRewarding = true; // 리워드 지급 여부
+
+// 🔹 리워드 지급 함수 (1분마다 실행)
+function startRewarding(userkey) {
+  if (!isRewarding) return;
+  console.log(`🎁 RewoadToUser() 실행 (유저: ${userkey})`);
+  RewoadToUser(userkey);
+}
+
+//1분마다 리워드 지급 (초기 실행)
+function startRewardInterval(userkey) {
+  if (rewardIntervalId) clearInterval(rewardIntervalId); // 기존 타이머 제거
+  rewardIntervalId = setInterval(() => startRewarding(userkey), 60000);
+}
+
+
+
 //  모든 사용자에게 방 리스트 전송하도록 수정 (가장 안정적인 방법)
 // function updateUserRoomList() {
 //   for (let [id, socket] of io.of("/").sockets) {
@@ -180,6 +200,7 @@ app.get('/favicon.ico', (req, res) => {
 //       socket.emit('room_list', userRoomNames); //  각 사용자의 클라이언트로 전송
 //   }
 // }
+
 
 //  모든 사용자에게 동일한 방 리스트 전송
 function updateUserRoomList() {
@@ -193,7 +214,8 @@ function updateUserRoomList() {
   io.emit('room_list', roomData); //  모든 클라이언트에게 방 리스트 전송
 }
 
-
+let inactiveUsers = new Set(); // ⛔ 비활성 사용자 리스트
+let intervalIdMap = new Map(); // 🔹 각 사용자별 setInterval ID 저장
 
 io.on('connection', (socket) => {
   const referer = socket.handshake.headers.referer;
@@ -202,6 +224,7 @@ io.on('connection', (socket) => {
   const userkey = urlParams.get('userkey');
   const nyang = urlParams.get('nyang');
 
+
   if (!userkey) {
     console.warn(`유저(${socket.id})의 userkey가 없음. 리워드 지급을 건너뜀.`);
     return;
@@ -209,12 +232,56 @@ io.on('connection', (socket) => {
 
   console.log(`🔹 유저(${socket.id})의 userkey: ${userkey}`);
 
-  // 🔹 1분마다 실행하는 함수 (연결된 유저별로 실행)
-  const intervalId = setInterval(async () => {
+  // 🛑 사용자가 3분 동안 입력이 없을 때 리워드 지급 중지
+  socket.on("stop_rewards", () => {
+    console.log(`🛑 [서버] ${socket.id} 사용자가 비활성 상태로 감지됨, 리워드 지급 중단`);
+    inactiveUsers.add(userkey);
+    console.log(`📌 [서버] 현재 비활성 사용자 목록:`, inactiveUsers);
 
-    console.log(`1분마다 RewoadToUser() 실행 (유저: ${userkey})`);
-    await RewoadToUser(userkey);
-  }, 60000);
+    // ⛔ 기존 setInterval 종료
+    if (intervalIdMap.has(userkey)) {
+      console.log(`⏹️ [서버] ${userkey}의 리워드 지급 타이머 중지됨.`);
+      clearInterval(intervalIdMap.get(userkey));
+      intervalIdMap.delete(userkey);
+    }
+  });
+
+  // ✅ 사용자가 다시 활동하면 리워드 지급 재개
+  socket.on("resume_rewards", () => {
+    if (inactiveUsers.has(userkey)) {
+      console.log(`✅ [서버] ${userkey}가 다시 활동 시작, 리워드 지급 재개`);
+      inactiveUsers.delete(userkey); // 비활성 상태 해제
+      console.log(`📌 [서버] 업데이트된 활성 사용자 목록:`, inactiveUsers);
+
+      // ⏳ 리워드 지급 타이머 다시 시작
+      const intervalId = setInterval(async () => {
+        if (inactiveUsers.has(userkey)) {
+          console.log(`⏸️ [서버] 비활성 사용자 ${userkey}, 리워드 지급 스킵`);
+          return;
+        }
+
+        console.log(`💰 [서버] 1분마다 RewoadToUser() 실행 (유저: ${userkey})`);
+        await RewoadToUser(userkey);
+      }, 60000);
+
+      intervalIdMap.set(userkey, intervalId);
+    }
+  });
+
+  // 🔹 1분마다 실행하는 리워드 API 호출 로직 (비활성 사용자 제외)
+  if (!intervalIdMap.has(userkey)) {
+    const intervalId = setInterval(async () => {
+      if (inactiveUsers.has(userkey)) {
+        console.log(`⏸️ [서버] 비활성 사용자 ${userkey}, 리워드 지급 스킵`);
+        return;
+      }
+
+      console.log(`💰 [서버] 1분마다 RewoadToUser() 실행 (유저: ${userkey})`);
+      await RewoadToUser(userkey);
+    }, 60000);
+
+    intervalIdMap.set(userkey, intervalId);
+  }
 
   socket.roomNames = {}; //  사용자가 입력한 방 번호 저장 객체  
 
@@ -374,7 +441,10 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`User ${socket.id} disconnected.`);
     updateUserRoomList(); //  사용자가 접속 종료 시 리스트 업데이트
-    clearInterval(intervalId);
+    if (intervalIdMap.has(userkey)) {
+      clearInterval(intervalIdMap.get(userkey)); // 사용자가 나가면 리워드 중지
+      intervalIdMap.delete(userkey);
+    }
   });
 });
 
@@ -496,17 +566,17 @@ server.listen(3001, () => {
   console.log('tomato BLACKJACK◇♠♡♣ server listening on *:3001');
 });
 
-setInterval(() => {
-  console.log(` 현재까지 모인 딜러팁: ${dealerTipTotal}`);
-}, 60000); // 1분마다 출력
+// setInterval(() => {
+//   console.log(` 현재까지 모인 딜러팁: ${dealerTipTotal}`);
+// }, 60000); // 1분마다 출력
 
-function updateDealerTip(amount) {
-  dealerTipTotal += amount;
-  console.log(` 딜러팁 업데이트됨: 현재 총 딜러팁 ${dealerTipTotal}`);
-}
+// function updateDealerTip(amount) {
+//   dealerTipTotal += amount;
+//   console.log(` 딜러팁 업데이트됨: 현재 총 딜러팁 ${dealerTipTotal}`);
+// }
 
-module.exports = {
-  dealerTipTotal,
-  updateDealerTip
-};
+// module.exports = {
+//   dealerTipTotal,
+//   updateDealerTip
+// };
 

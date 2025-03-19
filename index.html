@@ -62,25 +62,25 @@
         <div id="betting" style="z-index:99; position: absolute; display: none; ">
             <p style="position:absolute; top:100px; width:1024px; text-align:center;
                 color:white; font-size:30px;">베팅할 금액을 선택해주세요.</p>
-            <button id="bet1" onclick="betting(20)"
+            <button id="bet1" onclick="betting(200000)"
                 style="width:100px; height:100px; position: absolute;
                 background:linear-gradient(#2c213f,#0f0c15 );color:white;
-                top:334px; left:78px; line-height: 100px; font-size: 30px; text-align: center; border-radius: 100px;">20냥</button>
+                top:334px; left:78px; line-height: 100px; font-size: 20px; text-align: center; border-radius: 100px;">20만냥</button>
 
-            <button id="bet2" onclick="betting(50)"
+            <button id="bet2" onclick="betting(500000)"
                 style="width:100px; height:100px; position: absolute;
                 background:linear-gradient(#3f3120,#17140f );color:white;
-                top:334px; left:334px; line-height: 100px; font-size: 30px; text-align: center; border-radius: 100px;">50냥</button>
+                top:334px; left:334px; line-height: 100px; font-size: 20px; text-align: center; border-radius: 100px;">50만냥</button>
 
-            <button id="bet3" onclick="betting(100)"
+            <button id="bet3" onclick="betting(1000000)"
                 style="width:100px; height:100px; position: absolute;
                 background:linear-gradient(#402423,#322222 );color:white;
-                top:334px; left:590px; line-height: 100px; font-size: 30px; text-align: center; border-radius: 100px;">100냥</button>
+                top:334px; left:590px; line-height: 100px; font-size: 20px; text-align: center; border-radius: 100px;">100만냥</button>
 
-            <button id="bet4" onclick="betting(200)"
+            <button id="bet4" onclick="betting(2000000)"
                 style="width:100px; height:100px; position: absolute;
                 background:linear-gradient(#22474c,#142426 );color:white;
-                top:334px; left:846px; line-height: 100px; font-size: 30px; text-align: center; border-radius: 100px;">200냥</button>
+                top:334px; left:846px; line-height: 100px; font-size: 20px; text-align: center; border-radius: 100px;">200만냥</button>
         </div>
 
 
@@ -291,6 +291,9 @@
             myId = id;
             username = username;
             $('#myid-text').html(username + "님");
+
+            // 서버에 유저 접속 알림 (리워드 지급 시작)
+            socket.emit("user_connected", userkey);
         });
 
         // socket.on("room_join", ({ result, error }) => {
@@ -311,6 +314,7 @@
         //     }
         //     alert("room leave is " + result);
         // });
+
         //  방 입장 시 알림 및 UI 변경
         socket.on("room_join", ({ result, error, id }) => {
             if (result === "fail" && error === "full") {
@@ -332,8 +336,6 @@
             alert("방에서 나갔습니다.");
             $('#room').css('display', 'block');
         });
-
-
 
         socket.on('user_info', ({ users, userNames, result }) => {
             let isJoin = false;
@@ -439,7 +441,6 @@
                 $('#info-t').css('display', 'block');
                 updateInfoT();
             }
-
         });
 
         socket.on('turn', ({ userId }) => {
@@ -492,7 +493,6 @@
                 $('#info' + cnt).css('opacity', '1');
                 $('#user' + cnt + "-text").css('opacity', '1');
             }
-
         });
 
         socket.on('hit', ({ id, card, isEnd }) => {
